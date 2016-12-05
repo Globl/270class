@@ -5,6 +5,7 @@ package main.java;
  */
 public class ClassItem {
     private String className;
+    private String unitName;
     private String catalogName;
     private String fileName;
     private String filePath;
@@ -16,6 +17,14 @@ public class ClassItem {
 
     public void setClassName(String className) {
         this.className = className;
+    }
+
+    public String getUnitName() {
+        return unitName;
+    }
+
+    public void setUnitName(String unitName) {
+        this.unitName = unitName;
     }
 
     public String getCatalogName() {
@@ -48,5 +57,17 @@ public class ClassItem {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    @Override
+    public String toString() {
+        return "ClassItem{" +
+                "className='" + className + '\'' +
+                ", unitName='" + unitName + '\'' +
+                ", catalogName='" + catalogName + '\'' +
+                ", fileName='" + fileName + '\'' +
+                ", filePath='" + filePath + '\'' +
+                ", status='" + status + '\'' +
+                '}';
     }
 }
