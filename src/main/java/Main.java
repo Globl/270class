@@ -2,12 +2,11 @@ package main.java;
 
 import com.sun.org.apache.regexp.internal.RE;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFCell;
-import org.apache.poi.xssf.usermodel.XSSFRow;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.usermodel.*;
 
 import java.io.*;
 import java.net.ConnectException;
@@ -18,7 +17,7 @@ import java.util.Map;
 
 public class Main {
 
-    private static String[] titleRow = {"章节名","文件名","资源路径"};
+    private static String[] titleRow = {"验证情况","章节名","文件名","资源路径"};
     private static String path = "F:\\svnspace\\270class\\outfile";
 
     public static void main(String[] args) {
@@ -38,7 +37,7 @@ public class Main {
         }
         System.out.println("去重后的map大小:"+map.size());*/
         try {
-            InputStream is = new FileInputStream("270classes.xlsx");
+            InputStream is = new FileInputStream("8class.xlsx");
             XSSFWorkbook xssfWorkbook = new XSSFWorkbook(is);
             Map<String, List<ClassItem>> classItemMap = new HashMap<String, List<ClassItem>>();
             int keyNum = 0;
@@ -86,9 +85,17 @@ public class Main {
                 for (int i = 0;i<list.size();i++){
                     String filePath = list.get(i).getFilePath();
                     String oldType = filePath.substring(filePath.lastIndexOf(".")+1,filePath.length());//取得 doc或者 mp4 或者flv的后缀
-
+                    String newFilePath = changeFilePath(oldType,filePath);
+                    if (HttpUtil.get(newFilePath)){//转化后的地址
+                        list.get(i).setFilePath(newFilePath);
+                        list.get(i).setStatus("OK");
+                    }else if (HttpUtil.get(filePath)){//转化前的地址
+                        list.get(i).setStatus("OK");
+                    }else{//以上均不行
+                        list.get(i).setStatus("404");
+                    }
                 }
-
+                System.out.println("正在写 "+classKey+" 文件中...");
                 //写 之前 要确认 路径的正确
                 writer(classKey,"xlsx",classItemMap.get(classKey));
 
@@ -111,6 +118,18 @@ public class Main {
         }
     }
 
+    private static String changeFilePath(String oldType, String filePath) {
+        String temp = null;
+        if ("doc".equals(oldType)||"ppt".equals(oldType)){
+            temp = filePath.substring(0,filePath.lastIndexOf("."))+".swf";
+        }else if ("mp4".equals(oldType)){
+            temp = filePath.substring(0,filePath.lastIndexOf("."))+".flv";
+        }else{
+            temp = filePath;
+        }
+        return temp;
+    }
+
     private static String getValue(XSSFCell fileNameXss) {
         if (fileNameXss.getCellType() == XSSFCell.CELL_TYPE_NUMERIC) {
             return fileNameXss.getNumericCellValue() + "";
@@ -125,18 +144,33 @@ public class Main {
         XSSFSheet st = wb.createSheet("sheet1");
         XSSFRow row = null;
         XSSFCell cell=null;
+        XSSFCellStyle yellowStyle = wb.createCellStyle();
+        yellowStyle.setAlignment(XSSFCellStyle.ALIGN_CENTER);
+        yellowStyle.setFillForegroundColor(IndexedColors.DARK_YELLOW.getIndex());
+        yellowStyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
+        XSSFCellStyle greenStyle = wb.createCellStyle();
+        greenStyle.setAlignment(XSSFCellStyle.ALIGN_CENTER);
+        greenStyle.setFillForegroundColor(IndexedColors.BRIGHT_GREEN.getIndex());
+        greenStyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
         row = st.createRow(0);
         //第一行作为表头 0开始
         for (int i=0;i<titleRow.length;i++){
             cell = row.createCell(i);
             cell.setCellValue(titleRow[i]);
         }
+        row.getCell(0).setCellStyle(yellowStyle);
         //后续数据导入
         for (int i=0;i<list.size();i++){
             row = st.createRow(i+1);
-            row.createCell(0).setCellValue(list.get(i).getCatalogName());
-            row.createCell(1).setCellValue(list.get(i).getFileName());
-            row.createCell(2).setCellValue(list.get(i).getFilePath());
+            row.createCell(0).setCellValue(list.get(i).getStatus());
+            if ("OK".equals(list.get(i).getStatus())){
+                row.getCell(0).setCellStyle(greenStyle);
+            }else{
+                row.getCell(0).setCellStyle(yellowStyle);
+            }
+            row.createCell(1).setCellValue(list.get(i).getCatalogName());
+            row.createCell(2).setCellValue(list.get(i).getFileName());
+            row.createCell(3).setCellValue(list.get(i).getFilePath());
         }
         try {
             FileOutputStream fout = new FileOutputStream(excelPath);

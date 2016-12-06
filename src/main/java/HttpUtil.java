@@ -31,9 +31,13 @@ public class HttpUtil {
             // 获取所有响应头字段
             Map<String, List<String>> map = connection.getHeaderFields();
             // 遍历所有的响应头字段
-            for (String key : map.keySet()) {
+            /*for (String key : map.keySet()) {
                 System.out.println(key + "--->" + map.get(key));
+            }*/
+            if (map.get(null).get(0).contains("200")){
+                httpState = true;
             }
+            //System.out.println(map.get(null).get(0).contains("200"));
             /*// 定义 BufferedReader输入流来读取URL的响应
             in = new BufferedReader(new InputStreamReader(
                     connection.getInputStream()));
